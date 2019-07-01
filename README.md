@@ -44,7 +44,7 @@ export default {
 };
 ```
 Next, add `"build": "rollup -c rollup.config.js && du -h bundle.js"` to our package.json's `scripts` block, so we can easily build the file and output it's file size.
-Let's run it :)
+Lets run it via `npm run build` :)
 
 ```
 (!) Unresolved dependencies
@@ -266,31 +266,37 @@ The only thing is that you probably want to replace is the `rollup-plugin-node-r
 
 And actually really nice would be if you could just point to your `index.html` and rollup should figure out what are your entry points and if there is an import map.
 
-We are experimenting with it and added this detection in `rollup-plugin-index-html`.
+We are experimenting with it and added this detection in a rollup plugin called `rollup-plugin-index-html`.
 
 So let's install it
 ```bash
 yarn add --dev rollup-plugin-index-html
 ```
 
-and adjust our `rollup.config.js`
+and adjust/replace your `rollup.config.js`
 ```js
 import indexHTML from "rollup-plugin-index-html";
 
 export default config => ({
   input: "./index.html",
   output: {
-    dir: "dist", // replaced file as we now output at least one index.html and one js file
-    format: "esm" // replaced iife as we also generate an index.html which then loads the es module bundle
+    dir: "dist",
+    format: "esm"
   },
   plugins: [indexHTML(config)]
 });
 ```
 
+We now use:
+- a config function instead of an object to pass on the config to the plugin
+- an `index.html` instead of `main.js` as an entry point input
+- a dir output and an `esm` format as we generate multiple files
+- the plugin `rollup-plugin-index-html` instead of `rollup-plugin-node-resolve`
+
 This will output a folder you can throw on any web server (be it apache, express, ...).
 It will work in all evergreen browsers.
-If you need to support older browsers as well you will need more transpilations and polyfills and you will want to have a differential loading system I would say.
-We also offer ready-made configuration for it see [https://open-wc.org/building/building-rollup.html](https://open-wc.org/building/building-rollup.html).
+If you need to support older browsers as well you will need more transpilations and polyfills and you will want to have a differential loading system for better performance.
+We offer ready-made configuration for it and you can take a on our homepage at [https://open-wc.org/building/building-rollup.html](https://open-wc.org/building/building-rollup.html).
 
 ## What's Next?
 
