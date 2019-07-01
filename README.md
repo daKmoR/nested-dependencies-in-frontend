@@ -138,6 +138,7 @@ Basically it look into every `node_modules` folder up the folder tree starting w
 This is always relative from where you are importing the file from.
 e.g. within `node_modules/lit-element` it looks different
 ```bash
+$ cd node_modules/lit-element 
 $ node
 module.paths
 [
@@ -147,10 +148,9 @@ module.paths
   '/some/node_modules',
   '/node_modules',
 ]
-# unimportant folders are hidden here
 ```
 
-Doing that explains how nested dependencies can be resolved that way.
+Now we can understand what node's nested dependencies are. Every module can have it's own `node_modules` directory, *ad nauseum*, and imports referenced in that module's files will always look in their closest `node_modules` directory first..
 
 ##### Pros nested dependencies for node
 - It means every package can have their own versions of every dependency
@@ -164,51 +164,60 @@ Doing that explains how nested dependencies can be resolved that way.
 - Overall, in short, your site will get slower
 
 
-### An automatic resolve that prefers nesting might be dangerous for frontend
+### The Problems
+In short, automatic module resolution that prefers nesting may be dangerous for frontend.
 
-- We should care about performance
-- We should care about file size
-- We sometimes require certain code/packages to be singletons in our application
+- We care about loading and parsing performance
+- We care about file size
+- Some packages must be singletons (i.e. unique in the module graph) to work properly in our application
+  - Examples include `lit-html` and `graphql`
 - We should be in full control of what ends up on the client's browser
 
-All this is probably problematic when adopting the node resolution magic for the browser.
-Imho even if technically possible loading the code for a complex data-grid more than once should never be the goal.
+Node-style module resolution, which was designed for a server-side environment, can turn these concerns into serious issues when adopted in the browser.
+<abbr title="In my humble opinion">IMHO</abbr>, even if node resolution makes it technically possible, loading the code for a complex data-grid more than once should never be our goal as frontend developers.
 
 
-### How can we solve this?
+### Solutions
 
-#### Make it work
+Thankfully, there are solutions to these problems that we can use today, and proposals on the horizon which will altogether eliminate the need for such workarounds in the future.
 
-So what can you do?
-- Making sure that you only have similar ranges of dependencies in your dependency tree
-- You could not pin version even though it might be a better choice for applications
-- npm
-  - Running `npm dedupe` will try to find more packages that can potentially dedupe
-  - You can try deleting your `package-lock.json` and do a fresh install it sometimes magically helps
-- yarn
-  - if you have duplicate versions somewhere you could try [yarn resolutions](https://yarnpkg.com/lang/en/docs/selective-version-resolutions/)
+#### Making it Work Today
 
-#### Look into the future
+Here are some tips to work with bare module specifiers in your front end code today:
+- Make sure that the modules in your dependency tree all use similar version ranges of their common dependencies
+- Avoid pinning specific package versions (like we did above with `npm i -S lit-html@1.0.0`) wherever possible
+- If you're using `npm`:
+  - Run `npm dedupe` after installing packages to remove nested duplicates.
+  - You can try deleting your `package-lock.json` and do a fresh install. Sometimes it magically helps 🧙‍♂️
+- If you're using `yarn`:
+  - Consider using [yarn resolutions](https://yarnpkg.com/lang/en/docs/selective-version-resolutions/) to specify your preferred version of any duplicated packages
 
-Potentially a controlled "manual" 1:1 mapping between `package` and `path` could solve this permanently.
-You could write something like this and save it.
+#### A Look Into the Future
+
+If we could tell the JavaScript environment (i.e. the browser) exactly at which `path` to find the file specified by some string, we would have no need for node-style resolution or programming-time deduplication routines.
+We'd write something like this and pass it to the browser to specify which paths mapped to which packages:
 ```json
-"lit-html": "./node_modules/lit-html.js",
-"lit-element": "./node_modules/lit-element.js"
+{
+  "lit-html": "./node_modules/lit-html.js",
+  "lit-element": "./node_modules/lit-element.js"
+}
 ```
 
-using such a map to resolve package paths means there would always only be one version of lit-html and lit-element.
+Using this import map to resolve package paths means there would always only be one version of `lit-html` and `lit-element`, because the global environment already knows exactly where to find them.
 
-Luckily there is actually a spec for it and it's called [import maps](https://github.com/WICG/import-maps).
-> Mind you that it's an experimental API
+Luckily ✨,  this is already a proposed spec called [import maps](https://github.com/WICG/import-maps). And since it's meant for the browser there's no need to do any transformation at all! You just provide the map and you don't need any build step while developing?
 
-It's even meant for the browser - so no need to do any transformation at all??? just provide the map and you don't even need rollup while developing? sounds crazy? let's try it out :hugs:
+Sounds crazy 😜? Let's try it out! :hugs:
+> Note: Mind you this is an experimental API proposal, it hasn't been finalized or accepted by implementers.
 
-It currently only works in chrome 75+ and you need to enable a flag.
+
+It currently only works in Chrome 75+, behind a flag.
 So enter `chrome://flags/` in the URL bar and then search for `Built-in module infra and import maps` and enable it.
 Here is a direct link to it: [chrome://flags/#enable-built-in-module-infra](chrome://flags/#enable-built-in-module-infra).
 
-In order to use it with a browser let's create an `index.html` file.
+#### Using Import Maps in the Browser
+
+In order to use an import map, let's create an `index.html` file.
 ```html
 <html lang="en-GB">
 <head>
@@ -226,16 +235,33 @@ In order to use it with a browser let's create an `index.html` file.
 </head>
 
 <body>
-  <script type="module" src="./main.js"></script>
+  <script type="module">
+    import { html, LitElement } from 'lit-element';
+    customElements.define('crowd-chant', class extends LitElement {
+      render() {
+        return html`
+            <h2>What do we want?</h2>
+            <slot name="what"></slot>
+            <h2>When do we want them?</h2>
+            <time><slot name="when">Now!</slot></time>
+        `;
+      }
+    });
+  </script>
+  
+  <crowd-chant>
+    <span slot="what">Bare Imports!</span> 
+    <span slot="when">Now!</span>
+  </crowd-chant>
 </body>
 
 </html>
 ```
 
-then serve it by entering `npx http-server -o` in your terminal.
-This should open [http://localhost:8080/](http://localhost:8080/) where you should see in your console that the imports actually work. :tada:
+Save the file then serve it locally by running `npx http-server -o` in the same directory.
+This will open [http://localhost:8080/](http://localhost:8080/) where you will see your custom element rendered on screen. :tada:
 
-What kind of black magic is this? no build step and I can still keep writing bare modules?
+What kind of black magic is this 🔮? Without any bundlers, tools, or build step, we wrote a componentized app with the kind of bare specifiers we've come to know and love.
 
 Lets break it down:
 ```js
@@ -251,9 +277,9 @@ import { repeat } from 'lit-html/directives/repeat.js'
 ```
 
 So this means
-1. you can import the bare import directly as it is mapped to a specific file
-2. you can import subfolders and subfiles as a bare module + '/' as it is mapped to a folder
-3. you can NOT omit the `.js` when importing a subfolder/subfile
+1. You can import packages directly since the package name is mapped to a specific file
+2. You can import subdirectories and files, since `packageName + '/'` is mapped to its directory
+3. You must *not* omit the `.js` when importing a file from a subdirectory
 
 
 #### What does that mean for my production build?
