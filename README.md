@@ -61,17 +61,17 @@ OK, I've heard this one before... We need to add some plugins so that Rollup wil
 npm i -D rollup-plugin-node-resolve
 ```
 
-```js
-import resolve from "rollup-plugin-node-resolve";
-
-export default {
-  input: "main.js",
-  output: {
-    file: "bundle.js",
-    format: "iife"
-  },
-  plugins: [resolve()]
-};
+```diff
++ import resolve from "rollup-plugin-node-resolve";
++
+   export default {
+    input: "main.js",
+    output: {
+      file: "bundle.js",
+      format: "iife"
+    },
++  plugins: [resolve()]
+  };
 ```
 
 ```bash
@@ -168,6 +168,7 @@ Doing that explains how nested dependencies can be resolved that way.
 
 - We should care about performance
 - We should care about file size
+- We sometimes require certain code/packages to be singletons in our application
 - We need to be in full control of what ends up on the client's browser
 
 All this is probably problematic when adopting the node magic for the browser.
@@ -231,8 +232,8 @@ In order to use it with a browser let's create an `index.html` file.
 </html>
 ```
 
-then serve it by entering `npx http-server` in your terminal.
-Then you can open `http://localhost:8080/` and look into your console to see that the imports actually worked.
+then serve it by entering `npx http-server -o` in your terminal.
+This should open [http://localhost:8080/](http://localhost:8080/) where you should see in your console that the imports actually work. :tada:
 
 What kind of black magic is this? no build step and I can still keep writing bare modules?
 
