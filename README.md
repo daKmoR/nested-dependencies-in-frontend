@@ -1,14 +1,13 @@
 ---
-title: Nested dependencies in frontend
+title: Nested Dependencies in Frontend
 published: false
-description: What are nested dependencies, why they exist, how they can harm the frontend and what you can do to solve it.
+description: What are nested dependencies, why do they exist, how they can harm frontend development, and what you can do to solve it?
 tags: javascript, import-maps, node, rollup
 ---
 
-So you got this awesome idea and you want to now actually do it.
-I am pretty sure you do not want to start from scratch so let's use existing open source packages.
+So you got this awesome idea and now you want to actually do it. I'm pretty sure you do not want to start from scratch, so let's use existing open source packages.
 
-If you want to play along - all the code is on [github](https://github.com/daKmoR/nested-dependecies-in-frontend).
+If you want to play along, all the code is on [github](https://github.com/daKmoR/nested-dependecies-in-frontend).
 
 For our example case, we wanna use lit-element and lit-html.
 
@@ -18,9 +17,9 @@ cd nested-dependecies-in-frontend
 npm install lit-element lit-html@1.0.0 --save-exact
 ```
 
-> we are using pinned versions on purpose here
+> Note: we are using pinned versions on purpose here.
 
-and then we just load both packages in our `main.js`.
+Then we just load both packages in our `main.js`.
 ```js
 import { LitElement } from "lit-element";
 import { html } from "lit-html";
@@ -29,12 +28,12 @@ console.log(LitElement);
 console.log(html);
 ```
 
-In order to find out how big our app will be, we would like to create a rollup bundle.
+In order to find out how big our app will be, we would like to create a rollup bundle. First install Rollup:
 
 ```bash
 npm install -D rollup
 ```
-and create a `rollup.config.js`
+Then create a `rollup.config.js`
 ```js
 export default {
   input: "main.js",
@@ -44,10 +43,8 @@ export default {
   },
 };
 ```
-and add a `"build": "rollup -c rollup.config.js && du -h bundle.js"` to our package.json so we build the file and output it's file size.
+Next, add `"build": "rollup -c rollup.config.js && du -h bundle.js"` to our package.json's `scripts` block, so we can easily build the file and output it's file size.
 Let's run it :)
-
-oh it doesn't work :sob:
 
 ```
 (!) Unresolved dependencies
@@ -56,13 +53,14 @@ lit-element (imported by main.js)
 lit-html (imported by main.js)
 ```
 
-ok, I heard that before... we need to add some plugins to get it to understand the way node resolution works.
+Oh! It doesn't work! :sob:
+
+OK, I've heard this one before... We need to add some plugins so that Rollup will understand the way node resolution (i.e. bare module specifiers like `import { html } from 'lit-html'`) works.
 
 ```bash
 npm i -D rollup-plugin-node-resolve
 ```
 
-modify our rollup to add
 ```js
 import resolve from "rollup-plugin-node-resolve";
 
@@ -83,11 +81,11 @@ created bundle.js in 414ms
 96K     bundle.js
 ```
 
-So that seems to work fine :muscle:
+So that seems to work fine. :muscle:
 
-### What happens if someone prefers yarn?
+### What Happens if Someone Prefers yarn?
 
-Doing a yarn install and then a build should result in the same output right?
+Doing a yarn install and then a build should result in the same output, right?
 
 ```bash
 $ yarn install
@@ -97,9 +95,8 @@ created bundle.js in 583ms
 124K    bundle.js
 ```
 
-#### wow that is unexpected - 124K vs 96K?
-
-It seems yarn has some extra files... maybe a package is double?
+Wow! That is unexpected - 124K for the `yarn` build vs. 96K for `npm`?
+It seems the yarn build contains some extra files... maybe a package was duplicated?
 
 ```bash
 $ yarn list --pattern lit-*
@@ -108,10 +105,10 @@ $ yarn list --pattern lit-*
 └─ lit-html@1.0.0
 ```
 
-jup version `1.0.0` and `1.1.0` is available for `lit-html`.
+Yup, both `lit-html` versions `1.0.0` and `1.1.0` are installed.
 The reason is most likely that we have a pinned `1.0.0` version in our root dependency.
 
-npm seems to dedupe it fine...
+While `npm` seems to dedupe it fine, I don't feel safe using `npm` because if the dependency tree becomes bigger npm also likes to install nested dependencies.
 ```bash
 $ npm ls lit-element lit-html
 ├─┬ lit-element@2.2.0
@@ -119,9 +116,8 @@ $ npm ls lit-element lit-html
 └── lit-html@1.0.0
 ```
 
-However, don't feel safe when using `npm` because if the dependency tree becomes bigger npm also likes to install nested dependencies.
 
-### Summary of how node resolution works
+### How Node Resolution Works
 
 So if you do an `import { LitElement } from "lit-element";` then the "resolver" of node gets `lit-element`.
 Then it will start to search in all `module.paths` in order.
