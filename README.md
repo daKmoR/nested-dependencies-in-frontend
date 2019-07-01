@@ -106,7 +106,7 @@ $ yarn list --pattern lit-*
 ```
 
 Yup, both `lit-html` versions `1.0.0` and `1.1.0` are installed.
-The reason is most likely that we have a pinned `1.0.0` version in our root dependency.
+The reason is most likely that we pinned `lit-html` to version `1.0.0` in our root dependency when we installed it with the `npm install --save-exact lit-html@1.0.0` command, above.
 
 While `npm` seems to dedupe it fine, I don't feel safe using `npm` because if the dependency tree becomes bigger npm also likes to install nested dependencies.
 ```bash
