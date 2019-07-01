@@ -28,7 +28,7 @@ console.log(LitElement);
 console.log(html);
 ```
 
-In order to find out how big our app will be, we would like to create a rollup bundle. First install Rollup:
+In order to find out how big our app will be, we would like to create a rollup bundle. First, install Rollup:
 
 ```bash
 npm install -D rollup
@@ -153,7 +153,7 @@ module.paths
 Doing that explains how nested dependencies can be resolved that way.
 
 ##### Pros nested dependencies for node
-- It means every packages can have their own versions of every dependency
+- It means every package can have their own versions of every dependency
 - It means packages are not influenced by dependencies of other packages in the application
 - On the server, you usually do not care too much about how much extra code (in files size) there is
 - There is no "high fee" to pay for accessing many extra files.
@@ -296,7 +296,7 @@ We now use:
 This will output a folder you can throw on any web server (be it apache, express, ...).
 It will work in all evergreen browsers.
 If you need to support older browsers as well you will need more transpilations and polyfills and you will want to have a differential loading system for better performance.
-We offer ready-made configuration for it and you can take a on our homepage at [https://open-wc.org/building/building-rollup.html](https://open-wc.org/building/building-rollup.html).
+We offer ready-made configuration for it and you can take a look on our homepage at [https://open-wc.org/building/building-rollup.html](https://open-wc.org/building/building-rollup.html).
 
 ## What's Next?
 
