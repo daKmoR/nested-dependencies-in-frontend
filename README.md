@@ -121,7 +121,7 @@ $ npm ls lit-element lit-html
 
 So if you do an `import { LitElement } from "lit-element";` then the "resolver" of node gets `lit-element`.
 Then it will start to search in all `module.paths` in order.
-You can simply check it out by doing in your console
+You can simply check it out by doing in your terminal
 ```bash
 $ node
 module.paths
