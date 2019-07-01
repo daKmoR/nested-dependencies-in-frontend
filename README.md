@@ -301,3 +301,5 @@ We will look into if we can utilize that capability to hotfix a dependency next 
 
 Follow us on [Twitter](https://twitter.com/openwc), or follow me on my personal [Twitter](https://twitter.com/dakmor).
 Make sure to check out our other tools and recommendations at [open-wc.org](https://open-wc.org).
+
+Thanks to [Benny](https://dev.to/bennypowers) and Lars for feedback and helping turn my scribbles to a followable story.
