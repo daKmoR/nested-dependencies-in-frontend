@@ -156,7 +156,7 @@ module.paths
 
 Doing that explains how nested dependencies can be resolved that way.
 
-##### Pro nested dependencies for node
+##### Pros nested dependencies for node
 - It means multiple packages each can have their own version of their dependencies
 - It means no influenced by dependencies of other parts of your Application
 - On the server, you usually do not care too much about how much code (in files size) there is
@@ -175,7 +175,7 @@ Doing that explains how nested dependencies can be resolved that way.
 - We need to be in full control of what ends up on the client's browser
 
 All this is probably problematic when adopting the node magic for the browser.
-Imho even if technically possible loading the code for a complex data-grid more then once should never be the goal.
+Imho even if technically possible loading the code for a complex data-grid more than once should never be the goal.
 
 
 ### How can we solve this?
