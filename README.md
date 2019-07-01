@@ -153,15 +153,15 @@ module.paths
 Doing that explains how nested dependencies can be resolved that way.
 
 ##### Pros nested dependencies for node
-- It means multiple packages each can have their own version of their dependencies
-- It means no influenced by dependencies of other parts of your Application
-- On the server, you usually do not care too much about how much code (in files size) there is
+- It means every packages can have their own versions of every dependency
+- It means packages are not influenced by dependencies of other packages in the application
+- On the server, you usually do not care too much about how much extra code (in files size) there is
 - There is no "high fee" to pay for accessing many extra files.
 
 #### Cons nested dependencies for the frontend
 - Shipping the same code twice means longer download and processing times
 - Stuff might break if the same code is imported twice from 2 different locations (e.g. performance optimizations via weak maps or singletons)
-- Overall, in short, your site will get slower.
+- Overall, in short, your site will get slower
 
 
 ### An automatic resolve that prefers nesting might be dangerous for frontend
@@ -169,9 +169,9 @@ Doing that explains how nested dependencies can be resolved that way.
 - We should care about performance
 - We should care about file size
 - We sometimes require certain code/packages to be singletons in our application
-- We need to be in full control of what ends up on the client's browser
+- We should be in full control of what ends up on the client's browser
 
-All this is probably problematic when adopting the node magic for the browser.
+All this is probably problematic when adopting the node resolution magic for the browser.
 Imho even if technically possible loading the code for a complex data-grid more than once should never be the goal.
 
 
@@ -183,10 +183,10 @@ So what can you do?
 - Making sure that you only have similar ranges of dependencies in your dependency tree
 - You could not pin version even though it might be a better choice for applications
 - npm
-    - Running `npm dedupe` will try to find more packages that can potentially dedupe
-    - You can try deleting your `package-lock.json` and do a fresh install it sometimes magically helps
+  - Running `npm dedupe` will try to find more packages that can potentially dedupe
+  - You can try deleting your `package-lock.json` and do a fresh install it sometimes magically helps
 - yarn
-    - if you have duplicate versions somewhere you could try [yarn resolutions](https://yarnpkg.com/lang/en/docs/selective-version-resolutions/)
+  - if you have duplicate versions somewhere you could try [yarn resolutions](https://yarnpkg.com/lang/en/docs/selective-version-resolutions/)
 
 #### Look into the future
 
