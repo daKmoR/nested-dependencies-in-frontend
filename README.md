@@ -1,6 +1,6 @@
 ---
 title: Nested Dependencies in Frontend
-published: false
+published: true
 description: What are nested dependencies, why do they exist, how they can harm frontend development, and what you can do to solve it?
 tags: javascript, import-maps, node, rollup
 ---
@@ -116,12 +116,12 @@ $ npm ls lit-element lit-html
 └── lit-html@1.0.0
 ```
 
+Also specially when you use some beta (e.g. `0.x.x`) dependencies it becomes very tricky. As in this case [SemVer](https://semver.org/#spec-item-4) says every `0.x.0` release means a [breaking change](https://semver.org/#how-should-i-deal-with-revisions-in-the-0yz-initial-development-phase). This means `0.8.0` is treated as incompatible with `0.9.0`. Therefore even if the APIs you are using would work just fine with both versions you will always get nested dependencies which may break your application silently. e.g. there will be no warning or information on the terminal :scream: 
+
 
 ### How Node Resolution Works
 
-So if you do an `import { LitElement } from "lit-element";` then the "resolver" of node gets `lit-element`.
-Then it will start to search in all `module.paths` in order.
-You can simply check it out by doing in your terminal
+In nodejs, when you import a file using a bare specifier, e.g. `import { LitElement } from "lit-element";` Node's module resolver function gets the string `lit-element`, and begins searching all of the directories listed in `module.paths` for the importing module, which you can inspect like any other value in the node REPL:
 ```bash
 $ node
 module.paths
@@ -133,12 +133,10 @@ module.paths
 ]
 # unimportant folders are hidden here
 ```
-Basically it look into every `node_modules` folder up the folder tree starting with the current directory.
 
-This is always relative from where you are importing the file from.
-e.g. within `node_modules/lit-element` it looks different
+Basically, node looks into every `node_modules` folder, starting in the module's parent directory and moving up the file tree, until it finds a directory name which matches the module specifier (in our case, `lit-element`). The resolution algorithm always starts at the current module's parent directory, so it's always relative to where you are importing the file from. If we would inspect `module.paths` from within lit-element's directory, we'd see a different list.
 ```bash
-$ cd node_modules/lit-element 
+$ cd node_modules/lit-element
 $ node
 module.paths
 [
@@ -150,19 +148,14 @@ module.paths
 ]
 ```
 
-Now we can understand what node's nested dependencies are. Every module can have it's own `node_modules` directory, *ad nauseum*, and imports referenced in that module's files will always look in their closest `node_modules` directory first..
+Now we can understand what node's nested dependencies are. Every module can have it's own `node_modules` directory, *ad nauseum*, and imports referenced in that module's files will always look in their closest `node_modules` directory first...
 
-##### Pros nested dependencies for node
-- It means every package can have their own versions of every dependency
-- It means packages are not influenced by dependencies of other packages in the application
-- On the server, you usually do not care too much about how much extra code (in files size) there is
-- There is no "high fee" to pay for accessing many extra files.
-
-#### Cons nested dependencies for the frontend
-- Shipping the same code twice means longer download and processing times
-- Stuff might break if the same code is imported twice from 2 different locations (e.g. performance optimizations via weak maps or singletons)
-- Overall, in short, your site will get slower
-
+| Pros of Nested Dependencies on Node                                                                | Cons of Nested Dependencies for Frontend                                                                                                                                                                                                  |
+| -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Every package can have their own versions of every dependency                                      | Shipping the same code twice means longer download and processing times                                                                                                                                                                   |
+| Packages are not influenced by dependencies of other packages in the application                   | Stuff might break if the same code is imported twice from two different locations (e.g. performance optimizations via [WeakMaps](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WeakMap) or singletons) |
+| There is no "high fee" to pay for accessing many extra files.                                      | Checking if a file exists is an extra request                                                                                                                                                                                             |
+| On the server, you usually do not care too much about how much extra code (in files size) there is | Overall, in short, your site will get slower                                                                                                                                                                                              |
 
 ### The Problems
 In short, automatic module resolution that prefers nesting may be dangerous for frontend.
@@ -235,27 +228,34 @@ In order to use an import map, let's create an `index.html` file.
 </head>
 
 <body>
-  <script type="module">
-    import { html, LitElement } from 'lit-element';
-    customElements.define('crowd-chant', class extends LitElement {
-      render() {
-        return html`
-            <h2>What do we want?</h2>
-            <slot name="what"></slot>
-            <h2>When do we want them?</h2>
-            <time><slot name="when">Now!</slot></time>
-        `;
-      }
-    });
-  </script>
-  
   <crowd-chant>
-    <span slot="what">Bare Imports!</span> 
+    <span slot="what">Bare Imports!</span>
     <span slot="when">Now!</span>
   </crowd-chant>
+
+  <script type="module" src="./main.js"></script>
 </body>
 
 </html>
+```
+
+and adjust the `main.js`.
+
+```js
+import { html, LitElement } from "lit-element";
+
+class CrowdChant extends LitElement {
+  render() {
+    return html`
+      <h2>What do we want?</h2>
+      <slot name="what"></slot>
+      <h2>When do we want them?</h2>
+      <time><slot name="when">Now!</slot></time>
+    `;
+  }
+}
+
+customElements.define("crowd-chant", CrowdChant);
 ```
 
 Save the file then serve it locally by running `npx http-server -o` in the same directory.
@@ -282,56 +282,19 @@ So this means
 3. You must *not* omit the `.js` when importing a file from a subdirectory
 
 
-#### What does that mean for my production build?
+#### What Does this All Mean for my Production Build?
 
-> This is very experimental as we are exploring into this direction
-> Please be aware that the underlying technology `import-maps` is still unstable
+It's important to once again note that this is still experimental technology. In any event, you may still want to do an optimized build for production sites using tools like Rollup. We are exploring together what these new APIs will do for our websites and apps. The underlying `import-maps` proposal is still unstable, but that shouldn't stop us from experimenting and extracting utility from it. After all, most of us are comfortable using `babel` to enable experimental syntax like decorators, even though that proposal has at time of this writing at least four flavours.
 
-You still want to be able to do optimized production builds.
-The only thing is that you probably want to replace is the `rollup-plugin-node-resolve` with something that respects your `import map` instead of using the node resolve.
+If you want to try import maps today even in unsupported browsers, you'll need either a build step or a runtime solution like systemjs. For the build-step option, you'll replace the `rollup-plugin-node-resolve` with something that respects your `import map` instead of using node resolution.
 
-And actually really nice would be if you could just point to your `index.html` and rollup should figure out what are your entry points and if there is an import map.
+And wouldn't it be really nice if you could just point rollup to your `index.html` and have it figure out what your entry points are and if there is an import map?
 
-We are experimenting with it and added this detection in a rollup plugin called `rollup-plugin-index-html`.
+That's why at [open-wc](https://open-wc.org) we're releasing experimental support for import maps with our `rollup-plugin-index-html`.
 
-So let's install it
-```bash
-yarn add --dev rollup-plugin-index-html
-```
-
-and adjust/replace your `rollup.config.js`
-```js
-import indexHTML from "rollup-plugin-index-html";
-
-export default config => ({
-  input: "./index.html",
-  output: {
-    dir: "dist",
-    format: "esm"
-  },
-  plugins: [indexHTML(config)]
-});
-```
-
-We now use:
-- a config function instead of an object to pass on the config to the plugin
-- an `index.html` instead of `main.js` as an entry point input
-- a dir output and an `esm` format as we generate multiple files
-- the plugin `rollup-plugin-index-html` instead of `rollup-plugin-node-resolve`
-
-This will output a folder you can throw on any web server (be it apache, express, ...).
-It will work in all evergreen browsers.
-If you need to support older browsers as well you will need more transpilations and polyfills and you will want to have a differential loading system for better performance.
-We offer ready-made configuration for it and you can take a look on our homepage at [https://open-wc.org/building/building-rollup.html](https://open-wc.org/building/building-rollup.html).
-
-## What's Next?
-
-We will continue to explore the capabilities of `import maps`.
-For example, the feature to fully control all the imports that happen within an application.
-We will look into if we can utilize that capability to hotfix a dependency next time.
-
+And you can read all about it here on dev.to. Watch this space for the announcement 😉.
 
 Follow us on [Twitter](https://twitter.com/openwc), or follow me on my personal [Twitter](https://twitter.com/dakmor).
 Make sure to check out our other tools and recommendations at [open-wc.org](https://open-wc.org).
 
-Thanks to [Benny](https://dev.to/bennypowers) and Lars for feedback and helping turn my scribbles to a followable story.
+Thanks to [Benny](https://dev.to/bennypowers) and [Lars](https://github.com/LarsDenBakker) for feedback and helping turn my scribbles to a followable story.
